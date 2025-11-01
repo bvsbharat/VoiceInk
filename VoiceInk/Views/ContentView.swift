@@ -82,16 +82,16 @@ struct DynamicSidebar: View {
                         .cornerRadius(8)
                 }
                 
-                Text("VoiceInk")
+                Text("Slick")
                     .font(.system(size: 14, weight: .semibold))
                 
                 if case .licensed = licenseViewModel.licenseState {
                     Text("PRO")
                         .font(.system(size: 9, weight: .heavy))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.black)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
-                        .background(Color.blue)
+                        .background(Color.yellow)
                         .cornerRadius(4)
                 }
                 
@@ -144,7 +144,7 @@ struct DynamicSidebarButton: View {
                     .lineLimit(1)
                 Spacer()
             }
-            .foregroundColor(isSelected ? .white : (isHovered ? .accentColor : .primary))
+            .foregroundColor(isSelected ? .black : (isHovered ? Color(red: 0.8, green: 0.6, blue: 0.0) : .primary))
             .frame(height: 40)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 16)
@@ -152,8 +152,8 @@ struct DynamicSidebarButton: View {
                 ZStack {
                     if isSelected {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.accentColor)
-                            .shadow(color: Color.accentColor.opacity(0.5), radius: 5, x: 0, y: 2)
+                            .fill(Color.yellow)
+                            .shadow(color: Color.yellow.opacity(0.5), radius: 5, x: 0, y: 2)
                     } else if isHovered {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))

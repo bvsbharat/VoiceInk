@@ -7,7 +7,7 @@ import AppIntents
 import FluidAudio
 
 @main
-struct VoiceInkApp: App {
+struct SlickApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let container: ModelContainer
     
