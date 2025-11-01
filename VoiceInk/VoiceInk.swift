@@ -38,7 +38,9 @@ struct VoiceInkApp: App {
 
         do {
             let schema = Schema([
-                Transcription.self
+                Transcription.self,
+                ChatMessage.self,
+                ChatConversation.self
             ])
             
             // Create app-specific Application Support directory URL
@@ -50,7 +52,13 @@ struct VoiceInkApp: App {
             
             // Configure SwiftData to use the conventional location
             let storeURL = appSupportURL.appendingPathComponent("default.store")
-            let modelConfiguration = ModelConfiguration(schema: schema, url: storeURL)
+            
+            // Enable lightweight migration for schema changes
+            let modelConfiguration = ModelConfiguration(
+                schema: schema,
+                url: storeURL,
+                allowsSave: true
+            )
             
             container = try ModelContainer(for: schema, configurations: [modelConfiguration])
             
