@@ -301,9 +301,7 @@ class HotkeyManager: ObservableObject {
             fnDebounceTask = Task { [pendingState = isKeyPressed] in
                 try? await Task.sleep(nanoseconds: 75_000_000) // 75ms
                 if pendingFnKeyState == pendingState {
-                    await MainActor.run {
-                        self.processKeyPress(isKeyPressed: pendingState)
-                    }
+                    await self.processKeyPress(isKeyPressed: pendingState)
                 }
             }
             return
@@ -314,14 +312,14 @@ class HotkeyManager: ObservableObject {
         case .custom, .none:
             return // Should not reach here
         }
-        
-        processKeyPress(isKeyPressed: isKeyPressed)
+
+        await processKeyPress(isKeyPressed: isKeyPressed)
     }
     
-    private func processKeyPress(isKeyPressed: Bool) {
+    private func processKeyPress(isKeyPressed: Bool) async {
         guard isKeyPressed != currentKeyState else { return }
         currentKeyState = isKeyPressed
-        
+
         if isKeyPressed {
             // Key pressed down
             let now = Date()
@@ -371,7 +369,7 @@ class HotkeyManager: ObservableObject {
                     await whisperState.handleToggleMiniRecorder()
                 }
             }
-            
+
             keyPressStartTime = nil
         }
     }
