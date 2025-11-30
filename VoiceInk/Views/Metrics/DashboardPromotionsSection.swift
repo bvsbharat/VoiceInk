@@ -27,40 +27,8 @@ struct DashboardPromotionsSection: View {
     }
     
     var body: some View {
-        if shouldShowPromotions {
-            HStack(alignment: .top, spacing: 18) {
-                if shouldShowUpgradePromotion {
-                    DashboardPromotionCard(
-                        badge: "30% OFF",
-                        title: "Unlock VoiceInk Pro For Less",
-                        message: "Share VoiceInk on your socials, and instantly unlock a 30% discount on VoiceInk Pro.",
-                        accentSymbol: "megaphone.fill",
-                        glowColor: Color(red: 0.08, green: 0.48, blue: 0.85),
-                        actionTitle: "Share & Unlock",
-                        actionIcon: "arrow.up.right",
-                        action: openSocialShare
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                
-                if shouldShowAffiliatePromotion {
-                    DashboardPromotionCard(
-                        badge: "AFFILIATE 30%",
-                        title: "Earn With The VoiceInk Affiliate Program",
-                        message: "Share VoiceInk with friends or your audience and receive 30% on every referral that upgrades.",
-                        accentSymbol: "link.badge.plus",
-                        glowColor: Color(red: 0.08, green: 0.48, blue: 0.85),
-                        actionTitle: "Explore Affiliate",
-                        actionIcon: "arrow.up.right",
-                        action: openAffiliateProgram
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            EmptyView()
-        }
+        // Promotions disabled - app is fully open access
+        EmptyView()
     }
     
     private func openSocialShare() {
@@ -96,7 +64,7 @@ private struct DashboardPromotionCard: View {
     )
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 Text(badge.uppercased())
                     .font(.system(size: 11, weight: .heavy))
@@ -106,9 +74,9 @@ private struct DashboardPromotionCard: View {
                     .background(.white.opacity(0.2))
                     .clipShape(Capsule())
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
+
                 Image(systemName: accentSymbol)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white.opacity(0.85))
@@ -116,17 +84,17 @@ private struct DashboardPromotionCard: View {
                     .background(.white.opacity(0.18))
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            
+
             Text(title)
-                .font(.system(size: 21, weight: .heavy, design: .rounded))
+                .font(.system(size: 20, weight: .heavy, design: .rounded))
                 .foregroundColor(.white)
                 .fixedSize(horizontal: false, vertical: true)
-            
+
             Text(message)
-                .font(.system(size: 13.5, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.white.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
-            
+
             Button(action: action) {
                 HStack(spacing: 6) {
                     Text(actionTitle)
@@ -141,8 +109,8 @@ private struct DashboardPromotionCard: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, minHeight: 200, alignment: .topLeading)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Self.defaultGradient)

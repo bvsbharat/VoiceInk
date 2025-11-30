@@ -59,7 +59,8 @@ class HotkeyManager: ObservableObject {
     // Key state tracking
     private var currentKeyState = false
     private var keyPressStartTime: Date?
-    private let briefPressThreshold = 1.7
+    private var lastKeyReleaseTime: Date?
+    private let doubleClickThreshold: TimeInterval = 0.3 // 300ms for double-click detection
     private var isHandsFreeMode = false
     
     // Debounce for Fn key
@@ -68,6 +69,7 @@ class HotkeyManager: ObservableObject {
     
     // Keyboard shortcut state tracking
     private var shortcutKeyPressStartTime: Date?
+    private var lastShortcutKeyReleaseTime: Date?
     private var isShortcutHandsFreeMode = false
     private var shortcutCurrentKeyState = false
     private var lastShortcutTriggerTime: Date?
@@ -299,9 +301,7 @@ class HotkeyManager: ObservableObject {
             fnDebounceTask = Task { [pendingState = isKeyPressed] in
                 try? await Task.sleep(nanoseconds: 75_000_000) // 75ms
                 if pendingFnKeyState == pendingState {
-                    await MainActor.run {
-                        self.processKeyPress(isKeyPressed: pendingState)
-                    }
+                    await self.processKeyPress(isKeyPressed: pendingState)
                 }
             }
             return
@@ -312,48 +312,64 @@ class HotkeyManager: ObservableObject {
         case .custom, .none:
             return // Should not reach here
         }
-        
-        processKeyPress(isKeyPressed: isKeyPressed)
+
+        await processKeyPress(isKeyPressed: isKeyPressed)
     }
     
-    private func processKeyPress(isKeyPressed: Bool) {
+    private func processKeyPress(isKeyPressed: Bool) async {
         guard isKeyPressed != currentKeyState else { return }
         currentKeyState = isKeyPressed
-        
+
         if isKeyPressed {
-            keyPressStartTime = Date()
+            // Key pressed down
+            let now = Date()
+            keyPressStartTime = now
             
-            if isHandsFreeMode {
-                isHandsFreeMode = false
-                Task { @MainActor in
-                    guard canProcessHotkeyAction else { return }
-                    await whisperState.handleToggleMiniRecorder()
+            // Check if this is a double-press (second press within threshold)
+            if let lastRelease = lastKeyReleaseTime,
+               now.timeIntervalSince(lastRelease) < doubleClickThreshold {
+                // Double-press detected - toggle continuous recording mode
+                isHandsFreeMode = !isHandsFreeMode
+                lastKeyReleaseTime = nil // Reset to prevent triple-press issues
+                
+                if isHandsFreeMode {
+                    // Entering hands-free mode - start recording
+                    Task { @MainActor in
+                        guard canProcessHotkeyAction else { return }
+                        if !whisperState.isMiniRecorderVisible {
+                            await whisperState.handleToggleMiniRecorder()
+                        }
+                    }
+                } else {
+                    // Exiting hands-free mode - stop recording
+                    Task { @MainActor in
+                        guard canProcessHotkeyAction else { return }
+                        await whisperState.handleToggleMiniRecorder()
+                    }
                 }
                 return
             }
             
-            if !whisperState.isMiniRecorderVisible {
+            // Single press - start recording (push-to-talk mode)
+            if !whisperState.isMiniRecorderVisible && !isHandsFreeMode {
                 Task { @MainActor in
                     guard canProcessHotkeyAction else { return }
                     await whisperState.handleToggleMiniRecorder()
                 }
             }
         } else {
+            // Key released
             let now = Date()
+            lastKeyReleaseTime = now
             
-            if let startTime = keyPressStartTime {
-                let pressDuration = now.timeIntervalSince(startTime)
-                
-                if pressDuration < briefPressThreshold {
-                    isHandsFreeMode = true
-                } else {
-                    Task { @MainActor in
-                        guard canProcessHotkeyAction else { return }
-                        await whisperState.handleToggleMiniRecorder()
-                    }
+            // If not in hands-free mode, stop recording and transcribe
+            if !isHandsFreeMode {
+                Task { @MainActor in
+                    guard canProcessHotkeyAction else { return }
+                    await whisperState.handleToggleMiniRecorder()
                 }
             }
-            
+
             keyPressStartTime = nil
         }
     }
@@ -367,16 +383,33 @@ class HotkeyManager: ObservableObject {
         guard !shortcutCurrentKeyState else { return }
         shortcutCurrentKeyState = true
         lastShortcutTriggerTime = Date()
-        shortcutKeyPressStartTime = Date()
         
-        if isShortcutHandsFreeMode {
-            isShortcutHandsFreeMode = false
-            guard canProcessHotkeyAction else { return }
-            await whisperState.handleToggleMiniRecorder()
+        let now = Date()
+        shortcutKeyPressStartTime = now
+        
+        // Check if this is a double-press (second press within threshold)
+        if let lastRelease = lastShortcutKeyReleaseTime,
+           now.timeIntervalSince(lastRelease) < doubleClickThreshold {
+            // Double-press detected - toggle continuous recording mode
+            isShortcutHandsFreeMode = !isShortcutHandsFreeMode
+            lastShortcutKeyReleaseTime = nil // Reset to prevent triple-press issues
+            
+            if isShortcutHandsFreeMode {
+                // Entering hands-free mode - start recording
+                guard canProcessHotkeyAction else { return }
+                if !whisperState.isMiniRecorderVisible {
+                    await whisperState.handleToggleMiniRecorder()
+                }
+            } else {
+                // Exiting hands-free mode - stop recording
+                guard canProcessHotkeyAction else { return }
+                await whisperState.handleToggleMiniRecorder()
+            }
             return
         }
         
-        if !whisperState.isMiniRecorderVisible {
+        // Single press - start recording (push-to-talk mode)
+        if !whisperState.isMiniRecorderVisible && !isShortcutHandsFreeMode {
             guard canProcessHotkeyAction else { return }
             await whisperState.handleToggleMiniRecorder()
         }
@@ -387,16 +420,12 @@ class HotkeyManager: ObservableObject {
         shortcutCurrentKeyState = false
         
         let now = Date()
+        lastShortcutKeyReleaseTime = now
         
-        if let startTime = shortcutKeyPressStartTime {
-            let pressDuration = now.timeIntervalSince(startTime)
-            
-            if pressDuration < briefPressThreshold {
-                isShortcutHandsFreeMode = true
-            } else {
-                guard canProcessHotkeyAction else { return }
-                await whisperState.handleToggleMiniRecorder()
-            }
+        // If not in hands-free mode, stop recording and transcribe
+        if !isShortcutHandsFreeMode {
+            guard canProcessHotkeyAction else { return }
+            await whisperState.handleToggleMiniRecorder()
         }
         
         shortcutKeyPressStartTime = nil
